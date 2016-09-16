@@ -17,6 +17,42 @@ type Range struct {
 
 var infinity = int64(math.Inf(1))
 
+func (r *Range) RegExp() []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 2)
+	if v1 := r.MinVersion; v1 != nil {
+		list := []string{
+			fmt.Sprintf(`%d\.%d\.%s`, v1.Major, v1.Minor, gt(int(v1.Patch))),
+			fmt.Sprintf(`%d\.%s\.\d+`, v1.Major, gt(int(v1.Minor))),
+			fmt.Sprintf(`%s\.\d+\.\d+`, gt(int(v1.Major))),
+		}
+		if r.AllowMinEquality {
+			list = append(list, fmt.Sprintf(`%d\.%d\.%d`, v1.Major, v1.Minor, v1.Patch))
+		}
+		result[0] = regexp.MustCompile(fmt.Sprintf(`(?:(%s))`, strings.Join(list, `|`)))
+	} else {
+		result[0] = regexp.MustCompile(`.*`)
+	}
+	if v2 := r.MaxVersion; v2 != nil {
+		list := []string{}
+		if v2.Patch > 0 {
+			list = append(list, fmt.Sprintf(`%d\.%d\.%s`, v2.Major, v2.Minor, lt(int(v2.Patch))))
+		}
+		if v2.Minor > 0 {
+			list = append(list, fmt.Sprintf(`%d\.%s\.\d+`, v2.Major, lt(int(v2.Minor))))
+		}
+		if v2.Major > 0 {
+			list = append(list, fmt.Sprintf(`%s\.\d+\.\d+`, lt(int(v2.Major))))
+		}
+		if r.AllowMaxEquality {
+			list = append(list, fmt.Sprintf(`%d\.%d\.%d`, v2.Major, v2.Minor, v2.Patch))
+		}
+		result[1] = regexp.MustCompile(fmt.Sprintf(`(?:(%s))`, strings.Join(list, `|`)))
+	} else {
+		result[1] = regexp.MustCompile(`.*`)
+	}
+	return result
+}
+
 func (r *Range) UpperLimit() *Version {
 	mVersion := r.MaxVersion
 	if mVersion == nil {
