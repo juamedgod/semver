@@ -160,7 +160,15 @@ func (r *Range) RegExp() []*regexp.Regexp {
 			fmt.Sprintf(`%s\.\d+\.\d+`, gt(int(v1.Major))),
 		}
 		if r.AllowMinEquality {
-			list = append(list, fmt.Sprintf(`%d\.%d\.%d`, v1.Major, v1.Minor, v1.Patch))
+			eqlStrComp := []string{}
+			for _, c := range []int64{v1.Major, v1.Minor, v1.Patch} {
+				if c < 0 {
+					eqlStrComp = append(eqlStrComp, `\d*`)
+				} else {
+					eqlStrComp = append(eqlStrComp, strconv.Itoa(int(c)))
+				}
+			}
+			list = append(list, strings.Join(eqlStrComp, `.`))
 		}
 		result[0] = regexp.MustCompile(fmt.Sprintf(`(?:(%s))`, strings.Join(list, `|`)))
 	} else {
@@ -174,11 +182,23 @@ func (r *Range) RegExp() []*regexp.Regexp {
 		if v2.Minor > 0 {
 			list = append(list, fmt.Sprintf(`%d\.%s\.\d+`, v2.Major, lt(int(v2.Minor))))
 		}
+
 		if v2.Major > 0 {
 			list = append(list, fmt.Sprintf(`%s\.\d+\.\d+`, lt(int(v2.Major))))
+		} else if v2.Major < 0 {
+			// *.\d.\d is in-matcheable
+			list = append(list, fmt.Sprintf(`x\.x\.x`))
 		}
 		if r.AllowMaxEquality {
-			list = append(list, fmt.Sprintf(`%d\.%d\.%d`, v2.Major, v2.Minor, v2.Patch))
+			eqlStrComp := []string{}
+			for _, c := range []int64{v2.Major, v2.Minor, v2.Patch} {
+				if c < 0 {
+					eqlStrComp = append(eqlStrComp, `\d*`)
+				} else {
+					eqlStrComp = append(eqlStrComp, strconv.Itoa(int(c)))
+				}
+			}
+			list = append(list, strings.Join(eqlStrComp, `.`))
 		}
 		result[1] = regexp.MustCompile(fmt.Sprintf(`(?:(%s))`, strings.Join(list, `|`)))
 	} else {
