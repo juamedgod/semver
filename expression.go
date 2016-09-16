@@ -53,7 +53,7 @@ func ParseExpr(str string) (Expression, error) {
 		var ev Expression
 		switch {
 		case mapping["range"] != "":
-			ev = NewRange(mapping["range"])
+			ev = MustParseRange(mapping["range"])
 		}
 
 		condition = &exprCondition{Op: op, Operator1: condition, Operator2: ev}

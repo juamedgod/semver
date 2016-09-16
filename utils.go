@@ -29,7 +29,7 @@ func namedReEvaluate(re *regexp.Regexp, str string) (matched bool, mapping map[s
 }
 
 func digitsRange(n int, up bool) [][]string {
-	list := make([][]string, 0)
+	var list [][]string
 	for _, d := range digits(n) {
 		r := []string{}
 		if up {
@@ -101,4 +101,9 @@ func nPatterns(n int, up bool) []string {
 		t = append(t, fmt.Sprintf(`\d{,%d}`, len(r)-1))
 	}
 	return t
+}
+
+func toInt(str string) int64 {
+	i, _ := strconv.Atoi(str)
+	return int64(i)
 }

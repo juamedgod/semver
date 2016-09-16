@@ -4,19 +4,153 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
+var rangedVersionRe = regexp.MustCompile(
+	fmt.Sprintf(
+		// Major
+		`\s*[=v]*(?P<major>(\d+|\*|[xX]))`+
+			// Followed by an optional .Minor.Patch-preRelease+build
+			`(\.`+
+			// Minor
+			`(?P<minor>(\d+|\*|[xX]))`+
+			// Followed by an optional .Patch-preRelease+build
+			`(\.`+
+			// Patch
+			`(?P<patch>(\d+|\*|[xX]))`+
+			// -preRelease
+			`(-?(?P<preRelease>%s))?`+
+			// build
+			`(\+(?P<build>%s))?`+
+			`)?`+
+			`)?`, idStr, idStr,
+	),
+)
+
+var simpleRangeOperators = []string{`\^`, `~`, `=`, `\<=`, `\>=`, `\<`, `\>`, ``}
+
+var simpleRangeExpr = regexp.MustCompile(fmt.Sprintf(
+	`((?P<rangeOp>%s)\s*(?P<version1>%s))`,
+	strings.Join(simpleRangeOperators, `|`), rangedVersionRe.String()))
+
+var rangeExpr = regexp.MustCompile(fmt.Sprintf(
+	`(?P<range>%s|%s)`,
+	hyphenRangeExpr.String(), simpleRangeExpr.String()))
+
+var hyphenRangeExpr = regexp.MustCompile(fmt.Sprintf(
+	`((?P<version1>%s)\s*(?P<rangeOp>\-)\s*(?P<version2>%s))`,
+	rangedVersionRe.String(), rangedVersionRe.String()))
+
+var versionExpr = regexp.MustCompile(fmt.Sprintf(
+	`(?P<version1>%s)`,
+	rangedVersionRe.String()))
+
+// GlobVersion defines a version supporting x-range elements
+type GlobVersion struct {
+	*Version
+	anyMajor bool
+	anyMinor bool
+	anyPatch bool
+}
+
+// IsFixed returns true if the x-range does not contain any 'x' elements
+func (v *GlobVersion) IsFixed() bool {
+	return !v.anyMajor && !v.anyMinor && !v.anyPatch
+}
+
+func newGlobVersion(major int64, minor int64, patch int64) *GlobVersion {
+	return &GlobVersion{
+		anyMajor: major < 0,
+		anyMinor: minor < 0,
+		anyPatch: patch < 0,
+		Version:  NewVersion(major, minor, patch),
+	}
+}
+
+// TODO: This does not really works with GlobVersion
+// Next returns the next version
+func (v *GlobVersion) next() *GlobVersion {
+	ver := v.Version.next()
+	return newGlobVersion(ver.Major, ver.Minor, ver.Patch)
+}
+
+// MustParseGlobVersion parses x-range semver from str
+// Pnics if it cannot be parsed
+func MustParseGlobVersion(str string) *GlobVersion {
+	if v, err := ParseGlobVersion(str); err != nil {
+		panic(err)
+	} else {
+		return v
+	}
+}
+
+// ParseGlobVersion parses x-range semver from str
+// Returns an error if it cannot be parsed
+func ParseGlobVersion(str string) (*GlobVersion, error) {
+	isGlob := func(str string) bool {
+		globs := map[string]bool{"*": true, "x": true, "X": true}
+		_, ok := globs[str]
+		return ok
+	}
+	mapping, err := parseVersion(str, rangedVersionRe)
+	if err != nil {
+		return nil, err
+	}
+	var major, minor, patch int64
+	var anyMajor, anyMinor, anyPatch = false, false, false
+	if isGlob(mapping["major"]) {
+		anyMajor = true
+		major = -1
+	} else {
+		major = toInt(mapping["major"])
+	}
+
+	if isGlob(mapping["minor"]) || (mapping["minor"] == "" && major == -1) {
+		anyMinor = true
+		minor = -1
+	} else {
+		minor = toInt(mapping["minor"])
+		minor = toInt(mapping["minor"])
+	}
+	if isGlob(mapping["patch"]) || (mapping["patch"] == "" && minor == -1) {
+		anyPatch = true
+		patch = -1
+	} else {
+		patch = toInt(mapping["patch"])
+	}
+
+	return &GlobVersion{
+		anyMajor: anyMajor,
+		anyMinor: anyMinor,
+		anyPatch: anyPatch,
+		Version: &Version{
+			Major:        major,
+			Minor:        minor,
+			Patch:        patch,
+			PreRelease:   mapping["preRelease"],
+			Build:        mapping["build"],
+			majorPresent: mapping["major"] != "",
+			minorPresent: mapping["minor"] != "",
+			patchPresent: mapping["patch"] != "",
+		},
+	}, nil
+}
+
+// Range defines a semver range
 type Range struct {
 	Op               string
-	MinVersion       *Version
+	MinVersion       *GlobVersion
 	AllowMinEquality bool
-	MaxVersion       *Version
+	MaxVersion       *GlobVersion
 	AllowMaxEquality bool
 }
 
 var infinity = int64(math.Inf(1))
 
+// RegExp returns a pair of regexps corresponding to the lower and higher limits
+// of the range. If a version string matches both regexps, is contained in the range.
 func (r *Range) RegExp() []*regexp.Regexp {
 	result := make([]*regexp.Regexp, 2)
 	if v1 := r.MinVersion; v1 != nil {
@@ -53,56 +187,52 @@ func (r *Range) RegExp() []*regexp.Regexp {
 	return result
 }
 
-func (r *Range) UpperLimit() *Version {
+// UpperLimit returns a version describing the upper limit of the range
+func (r *Range) UpperLimit() *GlobVersion {
 	mVersion := r.MaxVersion
 	if mVersion == nil {
-		return NewVersion(infinity, infinity, infinity)
+		return newGlobVersion(infinity, infinity, infinity)
 	}
 	if r.AllowMaxEquality {
 		return mVersion
 	}
-	return NewVersion(mVersion.Major, mVersion.Minor-1, -infinity)
+	return newGlobVersion(mVersion.Major, mVersion.Minor-1, -infinity)
 }
 
-func (r *Range) LowerLimit() *Version {
+// LowerLimit returns a version describing the lower limit of the range
+func (r *Range) LowerLimit() *GlobVersion {
 	minVersion := r.MinVersion
 	if minVersion == nil {
-		return NewVersion(-infinity, -infinity, -infinity)
+		return newGlobVersion(-infinity, -infinity, -infinity)
 	}
 	if r.AllowMinEquality {
 		return minVersion
 	}
-	return NewVersion(minVersion.Major, minVersion.Minor+1, -infinity)
+	return newGlobVersion(minVersion.Major, minVersion.Minor+1, -infinity)
 }
 
-var simpleRangeOperators = []string{`\^`, `~`, `=`, `\<=`, `\>=`, `\<`, `\>`, ``}
+// MustParseRange creates a Range from a semver string
+// It panics in case of error
+func MustParseRange(str string) *Range {
+	r, err := ParseRange(str)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
 
-var simpleRangeExpr = regexp.MustCompile(fmt.Sprintf(
-	`((?P<rangeOp>%s)\s*(?P<version1>%s))`,
-	strings.Join(simpleRangeOperators, `|`), versionRe.String()))
-
-var rangeExpr = regexp.MustCompile(fmt.Sprintf(
-	`(?P<range>%s|%s)`,
-	hyphenRangeExpr.String(), simpleRangeExpr.String()))
-
-var hyphenRangeExpr = regexp.MustCompile(fmt.Sprintf(
-	`((?P<version1>%s)\s*(?P<rangeOp>\-)\s*(?P<version2>%s))`,
-	versionRe.String(), versionRe.String()))
-
-var versionExpr = regexp.MustCompile(fmt.Sprintf(
-	`(?P<version1>%s)`,
-	versionRe.String()))
-
-func NewRange(str string) *Range {
+// ParseRange creates a Range from a semver string
+// It will return a non-nil error if it fails
+func ParseRange(str string) (*Range, error) {
 	matched, mapping := namedReEvaluate(rangeExpr, str)
 	if !matched {
-		return nil
+		return nil, fmt.Errorf("Malformed range expression %q", str)
 	}
-	v := MustParseVersion(mapping["version1"])
+	v := MustParseGlobVersion(mapping["version1"])
 	op := &Range{
 		Op: mapping["rangeOp"],
 	}
-	var maxVersion, minVersion *Version
+	var maxVersion, minVersion *GlobVersion
 
 	minVersion = v
 	op.AllowMinEquality = true
@@ -110,14 +240,14 @@ func NewRange(str string) *Range {
 
 	switch op.Op {
 	case `-`:
-		v2 := MustParseVersion(mapping["version2"])
+		v2 := MustParseGlobVersion(mapping["version2"])
 		op.AllowMinEquality = true
 
 		if v2.patchPresent {
 			maxVersion = v2
 			op.AllowMaxEquality = true
 		} else {
-			maxVersion = v2.Next()
+			maxVersion = v2.next()
 			op.AllowMaxEquality = false
 		}
 	case `^`:
@@ -128,7 +258,7 @@ func NewRange(str string) *Range {
 				break
 			}
 		}
-		maxVersion = &Version{Major: d[0], Minor: d[1], Patch: d[2]}
+		maxVersion = newGlobVersion(d[0], d[1], d[2])
 		op.AllowMaxEquality = false
 	case `>`:
 		minVersion = v
@@ -153,18 +283,19 @@ func NewRange(str string) *Range {
 	case `~`:
 		switch {
 		case v.minorPresent:
-			maxVersion = &Version{Major: v.Major, Minor: v.Minor + 1, Patch: 0}
+			maxVersion = newGlobVersion(v.Major, v.Minor+1, 0)
 		default:
-			maxVersion = &Version{Major: v.Major + 1, Minor: 0, Patch: 0}
+			maxVersion = newGlobVersion(v.Major+1, 0, 0)
 		}
 	default:
-		panic(`Unknown operator ` + op.Op)
+		return nil, fmt.Errorf(`Unknown range operator ` + op.Op)
 	}
 	op.MaxVersion = maxVersion
 	op.MinVersion = minVersion
-	return op
+	return op, nil
 }
 
+// Evaluate checks if the provided version v is contained by the Range
 func (r *Range) Evaluate(v *Version) bool {
 	if (v.Greater(r.MinVersion) || (r.AllowMinEquality && v.Equal(r.MinVersion))) &&
 		(v.Less(r.MaxVersion) || (r.AllowMaxEquality && v.Equal(r.MaxVersion))) {
