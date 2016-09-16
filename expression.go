@@ -10,7 +10,9 @@ var expressionRe = regexp.MustCompile(
 	`(` + rangeExpr.String() + `)\s*` +
 		`(?P<union>(\|\||\s*))\s*(?P<rest>.*)`)
 
+// Expression defines a semver expression
 type Expression interface {
+	// Evaluate checks if the provided version v is matches the expression
 	Evaluate(v *Version) bool
 }
 type exprCondition struct {
@@ -32,6 +34,8 @@ func (c *exprCondition) Evaluate(v *Version) bool {
 	return c.Operator1.Evaluate(v) || c.Operator2.Evaluate(v)
 }
 
+// MustParseExpr parses a semver string
+// It returns the expression if str is well formed and panics otherwise
 func MustParseExpr(str string) (expr Expression) {
 	expr, err := ParseExpr(str)
 	if err != nil {
@@ -39,6 +43,9 @@ func MustParseExpr(str string) (expr Expression) {
 	}
 	return expr
 }
+
+// ParseExpr parses a semver string
+// It returns the expression if str is well formed and a non-nil error otherwise
 func ParseExpr(str string) (Expression, error) {
 	text := str
 	var condition Expression
