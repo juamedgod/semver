@@ -1,6 +1,6 @@
 .PHONY: test cover all lint
 
-BUILD_DIR := ./.build
+BUILD_DIR := ./artifacts
 
 fmtcheck = @if goimports -l $(1) | read var; then echo "goimports check failed for $(1):\n `goimports -d $(1)`"; exit 1; fi
 
