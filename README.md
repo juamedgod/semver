@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/juamedgod/semver)](https://goreportcard.com/report/github.com/juamedgod/semver)
+
 Go Semantic Versioning Parser
 =============================
 
