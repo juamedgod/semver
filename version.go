@@ -8,8 +8,9 @@ import (
 var idStr = `[a-zA-Z0-9-]+(\.[a-zA-Z0-9\.-]*[^\.])?`
 var versionRe = regexp.MustCompile(
 	fmt.Sprintf(
-		// Major
-		`\s*[v=]*(?P<major>\d+)`+
+		`^`+
+			// Major
+			`\s*[v=]*(?P<major>\d+)`+
 			// Followed by an optional .Minor.Patch-preRelease+build
 			`(\.`+
 			// Minor
@@ -23,7 +24,9 @@ var versionRe = regexp.MustCompile(
 			// build
 			`(\+(?P<build>%s))?`+
 			`)?`+
-			`)?`, idStr, idStr,
+			`)?`+
+			`\s*$`,
+		idStr, idStr,
 	),
 )
 
@@ -67,21 +70,31 @@ type Version struct {
 	patchPresent bool
 }
 
+func (v *Version) String() string {
+	s := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
+	if v.PreRelease != "" {
+		s += `-` + v.PreRelease
+	}
+	if v.Build != "" {
+		s += `+` + v.Build
+	}
+	return s
+}
+
 // NewVersion returns a version from the specified major, minor and patch components
-func NewVersion(major int64, minor int64, patch int64) *Version {
-	return &Version{Major: major, Minor: minor, Patch: patch, majorPresent: true, minorPresent: true, patchPresent: true}
-}
-
-// UpperLimit returns the upper limit of a version (itself).
-// Allows treating a version as a range for comparisson
-func (v *Version) UpperLimit() *Version {
-	return v
-}
-
-// LowerLimit returns the lower limit of a version (itself).
-// Allows treating a version as a range for comparisson
-func (v *Version) LowerLimit() *Version {
-	return v
+func NewVersion(major int64, minor int64, patch int64, extra ...string) *Version {
+	var preRelease, build string
+	if len(extra) > 0 {
+		preRelease = extra[0]
+		if len(extra) > 1 {
+			build = extra[1]
+		}
+	}
+	return &Version{
+		Major: major, Minor: minor, Patch: patch,
+		majorPresent: true, minorPresent: true, patchPresent: true,
+		PreRelease: preRelease, Build: build,
+	}
 }
 
 func (v *Version) next() *Version {
@@ -273,4 +286,16 @@ func MustParseVersion(str string) *Version {
 	} else {
 		return v
 	}
+}
+
+// UpperLimit returns the upper limit of a version (itself).
+// Allows treating a version as a range for comparisson
+func (v *Version) UpperLimit() *Version {
+	return v
+}
+
+// LowerLimit returns the lower limit of a version (itself).
+// Allows treating a version as a range for comparisson
+func (v *Version) LowerLimit() *Version {
+	return v
 }
