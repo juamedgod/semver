@@ -8,27 +8,29 @@ func Valid(str string) bool {
 	return false
 }
 
+// ONLY VERSIONS FOR NOW (to be implemented: ranges and GlobVersion )
+
 // Greater checks if element e1 is greater than e2
-func Greater(e1 Comparable, e2 Comparable) bool {
-	return e1.UpperLimit().Greater(e2.UpperLimit())
+func Greater(v1 Comparable, v2 Comparable) bool {
+	return v1.(*Version).Greater(v2.(*Version))
 }
 
 // Less checks if element e1 is less than e2
-func Less(e1 Comparable, e2 Comparable) bool {
-	return e1.LowerLimit().Less(e2.LowerLimit())
+func Less(v1 Comparable, v2 Comparable) bool {
+	return v1.(*Version).Less(v2.(*Version))
 }
 
 // GreaterOrEqual checks if element e1 is greater or equal than e2
-func GreaterOrEqual(e1 Comparable, e2 Comparable) bool {
-	return e1.UpperLimit().GreaterOrEqual(e2.UpperLimit())
+func GreaterOrEqual(v1 Comparable, v2 Comparable) bool {
+	return v1.(*Version).GreaterOrEqual(v2.(*Version))
 }
 
 // LessOrEqual checks if element e1 is less or equal to e2
-func LessOrEqual(e1 Comparable, e2 Comparable) bool {
-	return e1.LowerLimit().LessOrEqual(e2.LowerLimit())
+func LessOrEqual(v1 Comparable, v2 Comparable) bool {
+	return v1.(*Version).LessOrEqual(v2.(*Version))
 }
 
 // Equal checks if element e1 is equal to e2
-func Equal(e1 Comparable, e2 Comparable) bool {
-	return e1.LowerLimit().Equal(e2.LowerLimit()) && e1.UpperLimit().Equal(e2.UpperLimit())
+func Equal(v1 Comparable, v2 Comparable) bool {
+	return v1.(*Version).Equal(v2.(*Version))
 }

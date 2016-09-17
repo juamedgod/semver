@@ -53,8 +53,6 @@ var relaxedVersionRe = regexp.MustCompile(
 
 // Comparable defines the interface required to be compared
 type Comparable interface {
-	UpperLimit() *Version
-	LowerLimit() *Version
 }
 
 // Version describes a semver
@@ -140,7 +138,7 @@ func (v *Version) less(v2 *Version) bool {
 }
 
 // LessOrEqual checks if v is less or equal than the provided version v2
-func (v *Version) LessOrEqual(v2 interface{}) bool {
+func (v *Version) LessOrEqual(v2 Comparable) bool {
 	return v.Less(v2) || v.Equal(v2)
 }
 func (v *Version) greater(v2 *Version) bool {
@@ -151,12 +149,12 @@ func (v *Version) greater(v2 *Version) bool {
 }
 
 // GreaterOrEqual checks if v is greater or equal than the provided version v2
-func (v *Version) GreaterOrEqual(v2 interface{}) bool {
+func (v *Version) GreaterOrEqual(v2 Comparable) bool {
 	return v.Greater(v2) || v.Equal(v2)
 }
 
 // Equal checks if v is equal to the provided version v2
-func (v *Version) Equal(v2 interface{}) bool {
+func (v *Version) Equal(v2 Comparable) bool {
 	return v.compareWith(v2, func(pos int, e1 int64, e2 int64, any bool) interface{} {
 		if e1 != e2 && !any {
 			return false
@@ -166,7 +164,7 @@ func (v *Version) Equal(v2 interface{}) bool {
 }
 
 // Less checks if v is less than the provided version v2
-func (v *Version) Less(v2 interface{}) bool {
+func (v *Version) Less(v2 Comparable) bool {
 
 	if plainVersion, ok := v2.(*GlobVersion); (ok && plainVersion == nil) || v2 == nil {
 		return true
@@ -205,7 +203,7 @@ func compareWithGlobVersion(v1 *Version, v2 *GlobVersion, fn func(pos int, e1 in
 	return true
 }
 
-func (v *Version) compareWith(item interface{}, globComparer func(pos int, e1 int64, e2 int64, any bool) interface{}, regComparer func(v2 *Version) bool) bool {
+func (v *Version) compareWith(item Comparable, globComparer func(pos int, e1 int64, e2 int64, any bool) interface{}, regComparer func(v2 *Version) bool) bool {
 	switch v2 := item.(type) {
 	case *GlobVersion:
 		if v2 == nil {
@@ -224,7 +222,7 @@ func (v *Version) compareWith(item interface{}, globComparer func(pos int, e1 in
 }
 
 // Greater checks if v is greater than the provided version v2
-func (v *Version) Greater(v2 interface{}) bool {
+func (v *Version) Greater(v2 Comparable) bool {
 	if plainVersion, ok := v2.(*GlobVersion); (ok && plainVersion == nil) || v2 == nil {
 		return true
 	}
