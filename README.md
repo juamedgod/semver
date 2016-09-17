@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/juamedgod/semver.svg?branch=master)](https://travis-ci.org/juamedgod/semver)
 [![Go Report Card](https://goreportcard.com/badge/github.com/juamedgod/semver)](https://goreportcard.com/report/github.com/juamedgod/semver)
 [![GoDoc](https://godoc.org/github.com/juamedgod/semver?status.svg)](https://godoc.org/github.com/juamedgod/semver)
 
