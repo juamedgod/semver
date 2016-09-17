@@ -102,3 +102,32 @@ func TestEqual(t *testing.T) {
 		}
 	}
 }
+
+func TestSatisfies(t *testing.T) {
+	for _, battery := range []map[string]map[string]bool{
+		rangeTestBattery,
+		exprTestBattery,
+	} {
+		for exprStr, data := range battery {
+			exprObj := MustParseExpr(exprStr)
+			for vStr, expected := range data {
+				vObj := MustParseVersion(vStr)
+				results := make([]bool, 4)
+				errors := make([]error, 4)
+				results[0], errors[0] = Satisfies(vObj, exprObj)
+				results[1], errors[1] = Satisfies(vStr, exprStr)
+				results[2], errors[2] = Satisfies(vStr, exprObj)
+				results[3], errors[3] = Satisfies(vObj, exprStr)
+				for i := 0; i < len(results); i++ {
+					if errors[i] != nil {
+						t.Errorf("Expected Satisfies(%q, %q) (combination %d) to succeed but got %v", exprStr, vStr, i, errors[i])
+					}
+					if results[i] != expected {
+						t.Errorf("Expected Satisfies(%q, %q) (combination %d) to be %v", exprStr, vStr, i, expected)
+					}
+				}
+			}
+		}
+	}
+
+}

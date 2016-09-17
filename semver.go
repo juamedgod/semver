@@ -1,11 +1,50 @@
 package semver
 
+import "fmt"
+
 // Valid checks if a provided string is a valid version
 func Valid(str string) bool {
 	if _, err := ParseVersion(str); err == nil {
 		return true
 	}
 	return false
+}
+
+func toVersion(e interface{}) (*Version, error) {
+	switch v := e.(type) {
+	case *Version:
+		return v, nil
+	case string:
+		return ParseVersion(v)
+	default:
+		return nil, fmt.Errorf("unknown element type")
+	}
+}
+
+func toExpression(e interface{}) (Expression, error) {
+	switch v := e.(type) {
+	case Expression:
+		return v, nil
+	case string:
+		return ParseExpr(v)
+	default:
+		return nil, fmt.Errorf("unknown element type: %T", v)
+	}
+}
+
+// Satisfies receives a version (*Version or its string representation) and an expression (Expression or its string representation)
+// and returns whether the version satisfies the expression or not
+func Satisfies(version interface{}, expr interface{}) (bool, error) {
+	var err error
+	var v *Version
+	var e Expression
+	if v, err = toVersion(version); err != nil {
+		return false, fmt.Errorf("Cannot parse version: %v", err)
+	}
+	if e, err = toExpression(expr); err != nil {
+		return false, fmt.Errorf("Cannot parse expression: %v", err)
+	}
+	return e.Matches(v), nil
 }
 
 // ONLY VERSIONS FOR NOW (to be implemented: ranges and GlobVersion )
