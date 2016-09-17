@@ -10,28 +10,43 @@ var expressionRe = regexp.MustCompile(
 	`(` + rangeExpr.String() + `)\s*` +
 		`(?P<union>(\|\||\s*))\s*(?P<rest>.*)`)
 
+type evaluable interface {
+	// evaluate checks if the provided version v is matches the expression
+	evaluate(v *Version) bool
+}
+
 // Expression defines a semver expression
 type Expression interface {
-	// Evaluate checks if the provided version v is matches the expression
-	Evaluate(v *Version) bool
+	Matches(v *Version) bool
 }
+
+type semverExpression struct {
+	c evaluable
+}
+
+// Matches checks if the provided version v is accepted by the expression
+func (e *semverExpression) Matches(v *Version) bool {
+	return e.c.evaluate(v)
+}
+
 type exprCondition struct {
 	Op        string
-	Operator1 Expression
-	Operator2 Expression
+	Operator1 evaluable
+	Operator2 evaluable
 }
 
 type trueCondition struct {
 }
 
-func (c *trueCondition) Evaluate(v *Version) bool {
+func (c *trueCondition) evaluate(v *Version) bool {
 	return true
 }
-func (c *exprCondition) Evaluate(v *Version) bool {
+
+func (c *exprCondition) evaluate(v *Version) bool {
 	if c.Op == "AND" {
-		return c.Operator1.Evaluate(v) && c.Operator2.Evaluate(v)
+		return c.Operator1.evaluate(v) && c.Operator2.evaluate(v)
 	}
-	return c.Operator1.Evaluate(v) || c.Operator2.Evaluate(v)
+	return c.Operator1.evaluate(v) || c.Operator2.evaluate(v)
 }
 
 // MustParseExpr parses a semver string
@@ -48,7 +63,7 @@ func MustParseExpr(str string) (expr Expression) {
 // It returns the expression if str is well formed and a non-nil error otherwise
 func ParseExpr(str string) (Expression, error) {
 	text := str
-	var condition Expression
+	var condition evaluable
 	condition = &trueCondition{}
 	op := "AND"
 	for {
@@ -57,7 +72,7 @@ func ParseExpr(str string) (Expression, error) {
 			break
 		}
 		text = mapping["rest"]
-		var ev Expression
+		var ev evaluable
 		switch {
 		case mapping["range"] != "":
 			ev = MustParseRange(mapping["range"])
@@ -71,9 +86,9 @@ func ParseExpr(str string) (Expression, error) {
 		}
 	}
 	if condition == nil {
-		return condition, fmt.Errorf(`Cannot parse expression %q`, str)
+		return nil, fmt.Errorf(`Cannot parse expression %q`, str)
 	} else if strings.TrimSpace(text) != "" {
-		return condition, fmt.Errorf(`Extra characters found in expression: %q`, text)
+		return &semverExpression{c: condition}, fmt.Errorf(`Extra characters found in expression: %q`, text)
 	}
-	return condition, nil
+	return &semverExpression{c: condition}, nil
 }

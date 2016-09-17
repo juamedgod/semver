@@ -315,11 +315,20 @@ func ParseRange(str string) (*Range, error) {
 	return op, nil
 }
 
-// Evaluate checks if the provided version v is contained by the Range
-func (r *Range) Evaluate(v *Version) bool {
+// Contains checks if the provided version v is contained by the Range
+func (r *Range) Contains(v *Version) bool {
 	if (v.Greater(r.MinVersion) || (r.AllowMinEquality && v.Equal(r.MinVersion))) &&
 		(v.Less(r.MaxVersion) || (r.AllowMaxEquality && v.Equal(r.MaxVersion))) {
 		return true
 	}
 	return false
+}
+
+// Matches is equivalent to Contains and is provided to satisfy the Expression interface (a range is a simple expression)
+func (r *Range) Matches(v *Version) bool {
+	return r.Contains(v)
+}
+
+func (r *Range) evaluate(v *Version) bool {
+	return r.Contains(v)
 }

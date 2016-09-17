@@ -173,7 +173,7 @@ func TestRangeOperator(t *testing.T) {
 		r := MustParseRange(rangeStr)
 		re := r.RegExp()
 		for v, result := range data {
-			if r.Evaluate(MustParseVersion(v)) != result {
+			if r.Contains(MustParseVersion(v)) != result {
 				t.Errorf("Expected %v of %v to evaluate to %v", rangeStr, v, result)
 			}
 			nv := MustParseVersion(v)

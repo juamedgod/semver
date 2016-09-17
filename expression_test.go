@@ -41,7 +41,7 @@ func TestPerseExpr(t *testing.T) {
 			e := MustParseExpr(exprStr)
 			for vStr, result := range data {
 				v := MustParseVersion(vStr)
-				if e.Evaluate(v) != result {
+				if e.Matches(v) != result {
 					t.Errorf("Expected %q of %v to evaluate to %v", exprStr, v, result)
 				}
 			}
