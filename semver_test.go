@@ -32,7 +32,6 @@ func np(v1, v2 string) vPair {
 }
 
 func TestGreater(t *testing.T) {
-
 	for pair, comparisson := range versionComparissons {
 		greater := comparisson > 0
 		if Greater(pair.v1, pair.v2) != greater {
@@ -47,19 +46,59 @@ func TestGreater(t *testing.T) {
 	}
 }
 
-// func TestLess(t *testing.T) {
-// 	for rangeStr, data := range map[string]map[string]bool{
-// 		">1.3.0": {
-// 			"1.3.0": true,
-// 		},
-// 		"1.3.0": {
-// 			"1.3.0": false,
-// 		},
-// 	} {
-// 		for v, result := range data {
-// 			if Less(MustParseVersion(v), NewRange(rangeStr)) != result {
-// 				t.Errorf("Expected Less(%q, %q) == %q", result)
-// 			}
-// 		}
-// 	}
-// }
+func TestGreaterOrEqual(t *testing.T) {
+	for pair, comparisson := range versionComparissons {
+		greaterOrEqual := comparisson >= 0
+		if GreaterOrEqual(pair.v1, pair.v2) != greaterOrEqual {
+			t.Errorf("Expected GreaterOrEqual(%q, %q) to be %v", pair.v1, pair.v2, greaterOrEqual)
+		}
+		// If they are not equal, we reverse it to also test the other combination
+		if comparisson != 0 {
+			if GreaterOrEqual(pair.v2, pair.v1) != !greaterOrEqual {
+				t.Errorf("Expected GreaterOrEqual(%q, %q) to be %v", pair.v2, pair.v1, !greaterOrEqual)
+			}
+		}
+	}
+}
+
+func TestLess(t *testing.T) {
+	for pair, comparisson := range versionComparissons {
+		less := comparisson < 0
+		if Less(pair.v1, pair.v2) != less {
+			t.Errorf("Expected Less(%q, %q) to be %v", pair.v1, pair.v2, less)
+		}
+		// If they are not equal, we reverse it to also test the other combination
+		if comparisson != 0 {
+			if Less(pair.v2, pair.v1) != !less {
+				t.Errorf("Expected Less(%q, %q) to be %v", pair.v2, pair.v1, !less)
+			}
+		}
+	}
+}
+
+func TestLessOrEqual(t *testing.T) {
+	for pair, comparisson := range versionComparissons {
+		lessOrEqual := comparisson <= 0
+		if LessOrEqual(pair.v1, pair.v2) != lessOrEqual {
+			t.Errorf("Expected LessOrEqual(%q, %q) to be %v", pair.v1, pair.v2, lessOrEqual)
+		}
+		// If they are not equal, we reverse it to also test the other combination
+		if comparisson != 0 {
+			if LessOrEqual(pair.v2, pair.v1) != !lessOrEqual {
+				t.Errorf("Expected LessOrEqual(%q, %q) to be %v", pair.v2, pair.v1, !lessOrEqual)
+			}
+		}
+	}
+}
+
+func TestEqual(t *testing.T) {
+	for pair, comparisson := range versionComparissons {
+		equal := comparisson == 0
+		if Equal(pair.v1, pair.v2) != equal {
+			t.Errorf("Expected Equal(%q, %q) to be %v", pair.v1, pair.v2, equal)
+		}
+		if Equal(pair.v2, pair.v1) != equal {
+			t.Errorf("Expected Equal(%q, %q) to be %v", pair.v2, pair.v1, equal)
+		}
+	}
+}
