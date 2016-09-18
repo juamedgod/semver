@@ -1,9 +1,6 @@
 package semver
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 var rangeTestBattery = map[string]map[string]bool{
 	"^1.3.4": {
@@ -171,17 +168,9 @@ var rangeTestBattery = map[string]map[string]bool{
 func TestRangeOperator(t *testing.T) {
 	for rangeStr, data := range rangeTestBattery {
 		r := MustParseRange(rangeStr)
-		re := r.RegExp()
 		for v, result := range data {
 			if r.Contains(MustParseVersion(v)) != result {
 				t.Errorf("Expected %v of %v to evaluate to %v", rangeStr, v, result)
-			}
-			nv := MustParseVersion(v)
-
-			if re[0].MatchString(fmt.Sprintf(`%d.%d.%d`, nv.Major, nv.Minor, nv.Patch)) &&
-				re[1].MatchString(fmt.Sprintf(`%d.%d.%d`, nv.Major, nv.Minor, nv.Patch)) != result {
-				fmt.Println(re[0], re[1])
-				fmt.Println("WTF", fmt.Sprintf(`%d.%d.%d`, nv.Major, nv.Minor, nv.Patch), rangeStr, result)
 			}
 		}
 	}
@@ -193,8 +182,8 @@ func TestRangeOperatorRe(t *testing.T) {
 		re := r.RegExp()
 		for v, result := range data {
 			nv := MustParseVersion(v)
-			if re[0].MatchString(fmt.Sprintf(`%d.%d.%d`, nv.Major, nv.Minor, nv.Patch)) &&
-				re[1].MatchString(fmt.Sprintf(`%d.%d.%d`, nv.Major, nv.Minor, nv.Patch)) != result {
+			if re[0].MatchString(nv.String()) &&
+				re[1].MatchString(nv.String()) != result {
 				t.Errorf("Expected %v of %v to evaluate to %v", rangeStr, v, result)
 			}
 		}
