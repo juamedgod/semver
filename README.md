@@ -10,10 +10,21 @@ Go Semantic Versioning Parser
 
 ```
 package main
-import github.com/juamedgod/semver
+
+import (
+  "fmt"
+  "os"
+
+  "github.com/juamedgod/semver"
+)
 
 func main() {
-   result, err := semver.Satisfies("1.3.4", "1.2.1 - 1.4.0")
+  if result, err := semver.Satisfies("1.3.4", "1.2.1 - 1.4.0"); err != nil {
+    fmt.Fprintf(os.Stderr, "Error evalutating semver expression: %v", err)
+    os.Exit(1)
+  } else {
+    fmt.Println(result)
+  }
 }
 ```
 
