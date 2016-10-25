@@ -33,15 +33,15 @@ var versionRe = regexp.MustCompile(
 var relaxedVersionRe = regexp.MustCompile(
 	fmt.Sprintf(
 		// Major
-		`\s*[=v]*(?P<major>\d[\da-zA-Z]+)`+
+		`\s*[=v]*(?P<major>\d[\da-zA-Z]*)`+
 			// Followed by an optional .Minor.Patch-preRelease+build
 			`([\._-]`+
 			// Minor
-			`(?P<minor>\d[\da-zA-Z]+)`+
+			`(?P<minor>\d[\da-zA-Z]*)?`+
 			// Followed by an optional .Patch-preRelease+build
 			`([\._-]`+
 			// Patch
-			`(?P<patch>\d+)`+
+			`(?P<patch>\d[\da-zA-Z]*)?`+
 			// -preRelease
 			`(-?(?P<preRelease>%s))?`+
 			// build
@@ -268,6 +268,34 @@ func ParseVersion(str string) (*Version, error) {
 		Major:        toInt(mapping["major"]),
 		Minor:        toInt(mapping["minor"]),
 		Patch:        toInt(mapping["patch"]),
+		PreRelease:   mapping["preRelease"],
+		Build:        mapping["build"],
+		majorPresent: mapping["major"] != "",
+		minorPresent: mapping["minor"] != "",
+		patchPresent: mapping["patch"] != "",
+	}, nil
+}
+
+// ParsePermissiveVersion relaxes the Semver requirements to be able to parse non
+// standard versions
+func ParsePermissiveVersion(str string) (v *Version, err error) {
+	if v, err = ParseVersion(str); err == nil {
+		return v, err
+	}
+
+	mapping, err := parseVersion(str, relaxedVersionRe)
+	if err != nil {
+		return nil, err
+	}
+	var major, minor, patch int64
+
+	fmt.Sscanf(mapping["major"], "%d", &major)
+	fmt.Sscanf(mapping["minor"], "%d", &minor)
+	fmt.Sscanf(mapping["patch"], "%d", &patch)
+	return &Version{
+		Major:        major,
+		Minor:        minor,
+		Patch:        patch,
 		PreRelease:   mapping["preRelease"],
 		Build:        mapping["build"],
 		majorPresent: mapping["major"] != "",
