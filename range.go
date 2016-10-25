@@ -140,7 +140,6 @@ func ParseGlobVersion(str string) (*GlobVersion, error) {
 
 // Range defines a semver range
 type Range struct {
-	Op               string
 	MinVersion       *GlobVersion
 	AllowMinEquality bool
 	MaxVersion       *GlobVersion
@@ -249,16 +248,16 @@ func ParseRange(str string) (*Range, error) {
 		return nil, fmt.Errorf("Malformed range expression %q", str)
 	}
 	v := MustParseGlobVersion(mapping["version1"])
-	op := &Range{
-		Op: mapping["rangeOp"],
-	}
+	operator := mapping["rangeOp"]
+	op := &Range{}
+
 	var maxVersion, minVersion *GlobVersion
 
 	minVersion = v
 	op.AllowMinEquality = true
 	op.AllowMaxEquality = false
 
-	switch op.Op {
+	switch operator {
 	case `-`:
 		v2 := MustParseGlobVersion(mapping["version2"])
 		op.AllowMinEquality = true
@@ -308,7 +307,7 @@ func ParseRange(str string) (*Range, error) {
 			maxVersion = newGlobVersion(v.Major+1, 0, 0)
 		}
 	default:
-		return nil, fmt.Errorf(`Unknown range operator ` + op.Op)
+		return nil, fmt.Errorf(`Unknown range operator ` + operator)
 	}
 	op.MaxVersion = maxVersion
 	op.MinVersion = minVersion
