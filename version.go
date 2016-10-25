@@ -1,9 +1,9 @@
 package semver
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
-	"encoding/json"
 )
 
 var idStr = `[a-zA-Z0-9-]+(\.[a-zA-Z0-9\.-]*[^\.])?`
@@ -69,10 +69,12 @@ type Version struct {
 	patchPresent bool
 }
 
+// MarshalJSON Allows serializing the Version as a string
 func (v *Version) MarshalJSON() (data []byte, err error) {
 	return json.Marshal(v.String())
 }
 
+// String implements the Stringer interface for Version
 func (v *Version) String() string {
 	if v == nil {
 		return ""
