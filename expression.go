@@ -18,10 +18,16 @@ type evaluable interface {
 // Expression defines a semver expression
 type Expression interface {
 	Matches(v *Version) bool
+	String() string
 }
 
 type semverExpression struct {
-	c evaluable
+	str string
+	c   evaluable
+}
+
+func (e *semverExpression) String() string {
+	return e.str
 }
 
 // Matches checks if the provided version v is accepted by the expression
@@ -88,7 +94,7 @@ func ParseExpr(str string) (Expression, error) {
 	if condition == nil {
 		return nil, fmt.Errorf(`Cannot parse expression %q`, str)
 	} else if strings.TrimSpace(text) != "" {
-		return &semverExpression{c: condition}, fmt.Errorf(`Extra characters found in expression: %q`, text)
+		return &semverExpression{c: condition, str: str}, fmt.Errorf(`Extra characters found in expression: %q`, text)
 	}
-	return &semverExpression{c: condition}, nil
+	return &semverExpression{c: condition, str: str}, nil
 }

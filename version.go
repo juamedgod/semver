@@ -3,6 +3,7 @@ package semver
 import (
 	"fmt"
 	"regexp"
+	"encoding/json"
 )
 
 var idStr = `[a-zA-Z0-9-]+(\.[a-zA-Z0-9\.-]*[^\.])?`
@@ -68,7 +69,14 @@ type Version struct {
 	patchPresent bool
 }
 
+func (v *Version) MarshalJSON() (data []byte, err error) {
+	return json.Marshal(v.String())
+}
+
 func (v *Version) String() string {
+	if v == nil {
+		return ""
+	}
 	s := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.PreRelease != "" {
 		s += `-` + v.PreRelease
