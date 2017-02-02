@@ -256,7 +256,7 @@ func parseVersion(str string, re *regexp.Regexp) (map[string]string, error) {
 	mapping := make(map[string]string)
 
 	if len(result) == 0 {
-		return mapping, fmt.Errorf("malformed version string")
+		return mapping, fmt.Errorf("malformed version string %q", str)
 	}
 	for i, name := range re.SubexpNames() {
 		if name == "" {
