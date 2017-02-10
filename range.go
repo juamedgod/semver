@@ -90,7 +90,7 @@ func MustParseGlobVersion(str string) *GlobVersion {
 // Returns an error if it cannot be parsed
 func ParseGlobVersion(str string) (*GlobVersion, error) {
 	isGlob := func(str string) bool {
-		globs := map[string]bool{"*": true, "x": true, "X": true}
+		globs := map[string]bool{"*": true, "x": true, "X": true, "": true}
 		_, ok := globs[str]
 		return ok
 	}
