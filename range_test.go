@@ -74,13 +74,13 @@ var rangeTestBattery = map[string]map[string]bool{
 	"=1.3": {
 		"1.3.0": true,
 		"1.3":   true,
-		"1.3.1": false,
+		"1.3.1": true,
 		"2.3":   false,
 	},
 	"1.3": {
 		"1.3.0": true,
 		"1.3":   true,
-		"1.3.1": false,
+		"1.3.1": true,
 		"2.3":   false,
 	},
 	"1.3.2 - 1.4.1": {
