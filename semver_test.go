@@ -2,14 +2,18 @@ package semver
 
 import "testing"
 
+const HonorPreRelease = true
+
 var versionComparissons = map[vPair]int{
-	np("1.3", "1.1"):      1,
-	np("2.4.2", "2.4.2"):  0,
-	np("4.1", "4"):        1,
-	np("4.1.1", "4.1"):    1,
-	np("3.1.3", "3.1.20"): -1,
-	np("0", "1"):          -1,
-	np("0.1", "0.1"):      0,
+	np("1.3", "1.1"):                          1,
+	np("2.4.2", "2.4.2"):                      0,
+	np("4.1", "4"):                            1,
+	np("4.1.1", "4.1"):                        1,
+	np("3.1.3", "3.1.20"):                     -1,
+	np("0", "1"):                              -1,
+	np("0.1", "0.1"):                          0,
+	np("1.3.0-0", "1.3.0-1"):                  0,
+	np("1.3.0-0", "1.3.0-1", HonorPreRelease): -1,
 	//	np("1.2.4", "1.*"):    -1,
 }
 
@@ -27,8 +31,16 @@ type vPair struct {
 	v2 Comparable
 }
 
-func np(v1, v2 string) vPair {
-	return vPair{v1: MustParseVersion(v1), v2: MustParseVersion(v2)}
+func np(v1, v2 string, args ...bool) vPair {
+	semver1 := MustParseVersion(v1)
+	semver2 := MustParseVersion(v2)
+
+	if len(args) > 0 {
+		semver1.HonorPreRelease(args[0])
+		semver2.HonorPreRelease(args[0])
+	}
+
+	return vPair{v1: semver1, v2: semver2}
 }
 
 func TestGreater(t *testing.T) {
