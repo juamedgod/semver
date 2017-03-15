@@ -64,14 +64,22 @@ type Version struct {
 	PreRelease string
 	Build      string
 
-	majorPresent bool
-	minorPresent bool
-	patchPresent bool
+	majorPresent         bool
+	minorPresent         bool
+	patchPresent         bool
+	comparePreReleases   bool
+	preReleaseComparator func(pr1, pr2 string) (int, error)
 }
 
 // MarshalJSON Allows serializing the Version as a string
 func (v *Version) MarshalJSON() (data []byte, err error) {
 	return json.Marshal(v.String())
+}
+func (v *Version) HonorPreRelease(value bool) {
+	v.comparePreReleases = value
+	if value && v.preReleaseComparator == nil {
+		v.preReleaseComparator = comparePreReleases
+	}
 }
 
 // String implements the Stringer interface for Version
@@ -100,7 +108,8 @@ func NewVersion(major int64, minor int64, patch int64, extra ...string) *Version
 	}
 	return &Version{
 		Major: major, Minor: minor, Patch: patch,
-		majorPresent: true, minorPresent: true, patchPresent: true,
+		preReleaseComparator: comparePreReleases,
+		majorPresent:         true, minorPresent: true, patchPresent: true,
 		PreRelease: preRelease, Build: build,
 	}
 }
@@ -130,6 +139,10 @@ func (v *Version) compare(v2 *Version) int {
 		if e1 < e2 {
 			return -1
 		}
+	}
+	if v.comparePreReleases && v.preReleaseComparator != nil {
+		res, _ := v.preReleaseComparator(v.PreRelease, v2.PreRelease)
+		return res
 	}
 	return 0
 }

@@ -103,7 +103,86 @@ func nPatterns(n int, up bool) []string {
 	return t
 }
 
+func isInt(str string) bool {
+	if _, err := strconv.Atoi(str); err != nil {
+		return false
+	}
+	return true
+}
+
 func toInt(str string) int64 {
 	i, _ := strconv.Atoi(str)
 	return int64(i)
+}
+
+var preReleaseMapping = map[string]*regexp.Regexp{
+	"pre-alpha":         regexp.MustCompile(`^(?i)(pre-?alpha)[-\.\_]?(\d*)$`),
+	"alpha":             regexp.MustCompile(`^(?i)(alpha|a)[-\.\_]?(\d*)$`),
+	"beta":              regexp.MustCompile(`^(?i)(beta|b)[-\.\_]?(\d*)$`),
+	"release_candidate": regexp.MustCompile(`^(?i)(rc)[-\.\_]?(\d*)$`),
+	"final":             regexp.MustCompile(`^(?i)(final)[-\.\_]?(\d*)$`),
+}
+
+func preReleaseQuantifier(pr string) (int, int) {
+	quantifier := -1
+	level := 0
+	for i, id := range []string{
+		"pre-alpha", "alpha", "beta", "release_candidate", "final",
+	} {
+		match := preReleaseMapping[id].FindStringSubmatch(pr)
+		if len(match) > 0 {
+			quantifier = i
+			if match[2] != "" {
+				level = int(toInt(match[2]))
+			}
+			break
+		}
+	}
+	return quantifier, level
+}
+
+func compareInt(i1, i2 int) int {
+	switch {
+	case i1 < i2:
+		return -1
+	case i1 > i2:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func comparePreReleases(pr1, pr2 string) (res int, err error) {
+	switch {
+	case pr1 == pr2:
+		res = 0
+	case pr1 == "":
+		res = 1
+	case pr2 == "":
+		res = -1
+	default:
+		q1, l1 := preReleaseQuantifier(pr1)
+		q2, l2 := preReleaseQuantifier(pr2)
+		switch {
+		case q1 == -1 && q2 == -1:
+			// Just compare the strings
+			if pr1 < pr2 {
+				res = -1
+			} else {
+				res = 1
+			}
+		case q1 != -1 && q2 != -1:
+			res = compareInt(q1, q2)
+			if res == 0 {
+				res = compareInt(l1, l2)
+			}
+		default:
+			err = fmt.Errorf("unreliable pre-release comparison")
+			if pr1 < pr2 {
+				return -1, err
+			}
+			return 1, err
+		}
+	}
+	return res, nil
 }
