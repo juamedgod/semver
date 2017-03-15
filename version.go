@@ -82,6 +82,15 @@ func (v *Version) HonorPreRelease(value bool) {
 	}
 }
 
+// Hack allows making a semver deviate from the standard semver behavior in different ways
+func (v *Version) Hack(hacks ...Hack) *Version {
+	hacked := v
+	for _, h := range hacks {
+		hacked = h(hacked)
+	}
+	return hacked
+}
+
 // String implements the Stringer interface for Version
 func (v *Version) String() string {
 	if v == nil {
