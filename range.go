@@ -29,7 +29,7 @@ var rangedVersionRe = regexp.MustCompile(
 	),
 )
 
-var simpleRangeOperators = []string{`\^`, `~`, `=`, `\<=`, `\>=`, `\<`, `\>`, ``}
+var simpleRangeOperators = []string{`\^`, `~>`, `~`, `=`, `\<=`, `\>=`, `\<`, `\>`, ``}
 
 var simpleRangeExpr = regexp.MustCompile(fmt.Sprintf(
 	`((?P<rangeOp>%s)\s*(?P<version1>%s))`,
@@ -299,6 +299,8 @@ func ParseRange(str string) (*Range, error) {
 		maxVersion = v
 		op.AllowMaxEquality = true
 		op.AllowMinEquality = true
+	case `~>`:
+		fallthrough
 	case `~`:
 		switch {
 		case v.minorPresent:
