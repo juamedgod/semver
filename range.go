@@ -40,7 +40,7 @@ var rangeExpr = regexp.MustCompile(fmt.Sprintf(
 	hyphenRangeExpr.String(), simpleRangeExpr.String()))
 
 var hyphenRangeExpr = regexp.MustCompile(fmt.Sprintf(
-	`((?P<version1>%s)\s*(?P<rangeOp>\-)\s*(?P<version2>%s))`,
+	`((?P<version1>%s)\s+(?P<rangeOp>\-)\s+(?P<version2>%s))`,
 	rangedVersionRe.String(), rangedVersionRe.String()))
 
 var versionExpr = regexp.MustCompile(fmt.Sprintf(
